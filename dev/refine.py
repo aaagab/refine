@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # author: Gabriel Auger
 # version: 3.3.0
-# name: gpm
+# name: refine
 # license: MIT
 
 import os
@@ -10,8 +10,9 @@ import re
 import glob
 import shutil
 
-import dev.glob as my_glob
-from dev.helpers import is_pkg_git
+from . import glob as my_glob
+from .helpers import is_pkg_git
+
 
 def copy_to_destination(paths, direpa_src, direpa_dst):
 	os.makedirs(direpa_dst, exist_ok=True)
@@ -46,19 +47,25 @@ def set_rules(rules, filenpa_rules):
 					if not re.match(r"#", sline):
 						rules.append(sline)
 
-def get_paths_to_copy(direpa_src, added_rules=[]):
+def get_paths_to_copy(direpa_src, **user_data):
+	data=dict(added_rules=[], use_files=True)
+
+	if user_data:
+		data.update(user_data)
+
 	rules=[]
 	excluded_paths=set()
 
-	if is_pkg_git(direpa_src):
-		filenpa_private=os.path.join(direpa_src, ".git","info", "refine")
-		set_rules(rules, filenpa_private)
+	if data["use_files"] is True:
+		if is_pkg_git(direpa_src):
+			filenpa_private=os.path.join(direpa_src, ".git","info", "refine")
+			set_rules(rules, filenpa_private)
 
-	filenpa_refine=os.path.join(direpa_src, ".refine")
-	set_rules(rules, filenpa_refine)
+		filenpa_refine=os.path.join(direpa_src, ".refine")
+		set_rules(rules, filenpa_refine)
 
-	if added_rules:
-		rules.extend(added_rules)
+	if data["added_rules"]:
+		rules.extend(data["added_rules"])
 	# if location_alias_src == "pkg_version":
 		# rules.append("/.gpm/")
 

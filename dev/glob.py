@@ -2,6 +2,9 @@
 
 # Modified by Gabriel Auger 2019 added excluded_dirs parameter
 # modified to make it work with gitignore rules.
+# version: 3.3.0
+# name: refine
+# license: MIT
 
 import os
 import re
