@@ -1,0 +1,16 @@
+{
+    "authors": [
+        "Gabriel Auger"
+    ],
+    "deps": [],
+    "description": "filter files in a project using gitignore rules. Can be used with a .refine file to put your own rules for any sort of export  operation.",
+    "filen_main": "__init__.py",
+    "gpm_version": "0.2.0",
+    "installer": "gpm",
+    "licenses": [
+        "MIT"
+    ],
+    "name": "refine",
+    "uuid4": "9aaed767-ea75-499c-ac4c-6524d720ff10",
+    "version": "0.1.0"
+}

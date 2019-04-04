@@ -2,5 +2,6 @@ __pycache__/
 .env/
 .pytest_cache/
 .vscode
-*.pyc
-modules/
+.git/
+.gitignore
+/archives/
