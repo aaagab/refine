@@ -12,8 +12,9 @@ import os, shlex, sys
 # del sys.path[0:2]
 
 
-from ..modules.shell_helpers import shell_helpers as shell
-from ..modules.message import message as msg
+# from ..gpkgs.message import message as msg
+from ..gpkgs import message as msg
+from ..gpkgs import shell_helpers as shell
 
 def is_pkg_git(path=""):
     start_path=""

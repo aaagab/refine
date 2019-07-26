@@ -115,10 +115,18 @@ def glob1(excluded_dirs, dirname, pattern):
 
 def is_dir_excluded(dirname, excluded_dirs):
     excluded=False
+    has_element=False
     for exdir in excluded_dirs:
+        has_element=True
         reg_str=r"{}*".format(exdir)
-        if re.match(reg_str, dirname):
+        # print("#######")
+        # print(reg_str.replace("\\", "\\\\"), dirname.replace("\\", "\\\\"))
+        if re.match(reg_str.replace("\\", "/"), dirname.replace("\\", "/")):
+            # input("Match is True")
             return True
+
+    # if has_element is True:
+        # input("Match is False")
 
     return False
 
