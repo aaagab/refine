@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # author: Gabriel Auger
-# version: 0.1.0
+# version: 0.1.1
 # name: release
 # license: MIT
 import os, shlex, sys
@@ -12,8 +12,9 @@ import os, shlex, sys
 # del sys.path[0:2]
 
 
-from ..modules.shell_helpers import shell_helpers as shell
-from ..modules.message import message as msg
+# from ..gpkgs.message import message as msg
+from ..gpkgs import message as msg
+from ..gpkgs import shell_helpers as shell
 
 def is_pkg_git(path=""):
     start_path=""

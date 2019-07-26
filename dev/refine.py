@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # author: Gabriel Auger
-# version: 0.1.0
+# version: 0.1.1
 # name: refine
 # license: MIT
 
@@ -30,7 +30,7 @@ def get_all_paths(direpa_src, direpas_all, filenpas_all, direpa=""):
 		direpa=direpa_src
 
 	for elem_name in os.listdir(direpa):
-		elem_path=os.path.join(direpa, elem_name)
+		elem_path=os.path.join(direpa, elem_name).replace("\\", "/")
 		if os.path.isdir(elem_path):
 			direpas_all.add(elem_path)
 			get_all_paths(direpa_src, direpas_all, filenpas_all, elem_path)
@@ -69,9 +69,16 @@ def get_paths_to_copy(direpa_src, **user_data):
 	# if location_alias_src == "pkg_version":
 		# rules.append("/.gpm/")
 
+	# print(rules)
+	# input()
+
 	filenpas_all=set()
 	direpas_all=set()
 	get_all_paths(direpa_src, direpas_all, filenpas_all)
+
+	# pprint(filenpas_all)
+
+	# input()
 
 	excluded_dirs=set()
 	for rule in rules:
@@ -112,7 +119,9 @@ def get_paths_to_copy(direpa_src, **user_data):
 				else:
 					if negative:
 						# get all matches with regular glob
+						direpa_rule="{}/{}".format(direpa_src, rule)
 						for path in glob.glob("{}/{}".format(direpa_src, rule), recursive=True):
+							path=path.replace("\\", "/")
 							# according to path
 							# check if for one excluded_dirs, one is path direct parent or path is equals.
 							if path in excluded_dirs:
@@ -127,6 +136,7 @@ def get_paths_to_copy(direpa_src, **user_data):
 								if direpa_path_relation != path: # direct_parent
 									# print("ousous")
 									for elem in os.listdir(direpa_path_relation):
+										elem=elem.replace("\\","/")
 										direpa=os.path.join(direpa_path_relation, elem)
 										if os.path.isdir(direpa):
 											if direpa != path:
@@ -147,9 +157,24 @@ def get_paths_to_copy(direpa_src, **user_data):
 								for rpath in paths_remove:
 									excluded_paths.remove(rpath)
 					else:
-						for path in my_glob.glob(excluded_dirs, "{}/{}".format(direpa_src, rule), recursive=True):
+						direpa_rule="{}/{}".format(direpa_src.replace("\\","/"), rule)
+						# print("here before the crash")
+						# print("before ##########")
+						# pprint(direpa_rule)
+						# print("after ##########")
+						# input()
+						# input()
+						# print(direpa_src)
+						# print(rule)
+						# print(direpa_rule)
+						# input()
+						# C:\\Users\\user\\Desktop\\data\\apps\\r\\refine\\src\\__pycache__* C:\\Users\\user\\Desktop\\data\\apps\\r\\refine\\src\\__pycache__
+						for path in my_glob.glob(excluded_dirs, direpa_rule, recursive=True):
+							path=path.replace("\\", "/")
 							if directory:
 								if os.path.isdir(path):
+									# print(excluded_dirs)
+									# input("here")
 									process_excluded_dir(path, excluded_dirs)
 									for p in filenpas_all:
 										if "{}/".format(path) in p:
@@ -167,10 +192,18 @@ def get_paths_to_copy(direpa_src, **user_data):
 	# pprint(excluded_dirs)
 	# add direpas not removed
 	remove_dirs=set()
-	for exdir in excluded_dirs:
+	# pprint(excluded_dirs)
+	# pprint(direpas_all)
+	# input()
+	for exdir in excluded_dirs:		
 		for direpa in direpas_all:
+			# print(exdir, direpa)
 			if exdir in direpa:
+				# print("excluded")
 				remove_dirs.add(direpa)
+			# else:
+				# print("not excluded")
+			# input()
 
 	kept_paths=filenpas_all - excluded_paths
 	remaing_folders=direpas_all - remove_dirs
@@ -181,10 +214,10 @@ def get_paths_to_copy(direpa_src, **user_data):
 
 # direct_parent means a level up from path 
 def get_direct_parent(path, excluded_dirs):
-	num_elems_path=len(path.split("/"))
+	num_elems_path=len(path.split(os.sep))
 
 	for exdir in excluded_dirs:
-		num_elems_exdir=len(exdir.split("/"))
+		num_elems_exdir=len(exdir.split(os.sep))
 		
 		if num_elems_path > num_elems_exdir:
 			if num_elems_path - num_elems_exdir == 1:
@@ -193,11 +226,17 @@ def get_direct_parent(path, excluded_dirs):
 
 # this function always keep only the highest directory and get rid of its children, if all its children are excluded
 def process_excluded_dir(direpa, excluded_dirs):
-	num_elems_direpa=len(direpa.split("/"))
+	# input(excluded_dirs)
+	# input(direpa)
+	num_elems_direpa=len(direpa.split(os.sep))
+	# input(num_elems_direpa)
+	# print(num_elems_direpa)
+	# input(direpa)
 	add_direpa=True
 	for exdir in excluded_dirs:
-		num_elems_exdir=len(exdir.split("/"))
-		
+		# input(exdir)
+		num_elems_exdir=len(exdir.split(os.sep))
+		# print(num_elems_exdir)
 		if num_elems_direpa < num_elems_exdir:
 			if direpa in exdir: # if direpa is parent of exdir
 				remove_children(excluded_dirs, direpa)
@@ -212,7 +251,13 @@ def process_excluded_dir(direpa, excluded_dirs):
 				break
 
 	if add_direpa:
+		direpa=direpa.replace("\\","/")
 		excluded_dirs.add(direpa)
+		# excluded_dirs.add(direpa.replace("\\", "\\\\"))
+		# print(direpa)
+		# input()
+		# excluded_dirs.add(direpa.replace("\\", "\\"))
+		# excluded_dirs.add(direpa.replace("\\", "/"))
 
 def remove_children(excluded_dirs, pattern):
 	delete_elems=[]
