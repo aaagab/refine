@@ -2,7 +2,7 @@
 
 # Modified by Gabriel Auger 2019 added excluded_dirs parameter
 # modified to make it work with gitignore rules.
-# version: 0.1.0
+# version: 0.1.1
 # name: refine
 # license: MIT
 
