@@ -1,273 +1,206 @@
 #!/usr/bin/env python3
-# author: Gabriel Auger
-# version: 0.1.1
-# name: refine
-# license: MIT
-
 import os
 from pprint import pprint
 import re
-import glob
 import shutil
+import sys
 
-from . import glob as my_glob
-from .helpers import is_pkg_git
+from .exceptions import RefineError
+from .patterns import get_path_level, Pattern, set_pattern
 
+def refine(
+	direpa_src, 
+	patterns=None, 
+	get_abs_paths=True,
+	filenpa_patterns=None,
+	direpa_dst=None,
+	keep_empty_dir=True,
+):
+	if patterns is None:
+		patterns=[]
 
-def copy_to_destination(paths, direpa_src, direpa_dst):
-	os.makedirs(direpa_dst, exist_ok=True)
-	for path in paths:
-		path_rel=os.path.relpath(path, direpa_src)
-		path_dst=os.path.join(direpa_dst, path_rel)
+	tmp_patterns=[]
 
-		if os.path.isdir(path):
-			os.makedirs(path_dst, exist_ok=True)
+	if not os.path.exists(direpa_src):
+		raise RefineError("For option direpa_src directory not found '{}'.".format(direpa_src))
+
+	if direpa_dst is not None:
+		os.makedirs(direpa_dst, exist_ok=True)
+
+	if filenpa_patterns is not None:
+		if not isinstance(filenpa_patterns, list):
+			raise RefineError("option filenpa_patterns must be of type {}.".format(list))
+
+		for filenpa_pattern in filenpa_patterns:
+			if not os.path.isabs(filenpa_pattern):
+				filenpa_pattern=os.path.join(direpa_src, filenpa_pattern)
+
+			filenpa_pattern=os.path.normpath(filenpa_pattern)
+
+			if not os.path.exists(filenpa_pattern):
+				raise RefineError("For option filenpa_patterns path not found '{}'.".format(filenpa_pattern))
+
+			if not os.path.isfile(filenpa_pattern):
+				raise RefineError("For option filenpa_patterns path is not a file '{}'.".format(filenpa_pattern))
+
+			with open(filenpa_pattern, "r") as f:
+				lines=f.read().splitlines()
+				for line in lines:
+					pattern_text=set_pattern(line)
+					if pattern_text is not None:
+						tmp_patterns.append(Pattern(pattern_text))
+
+	for pattern in patterns:
+		pattern_text=set_pattern(pattern)
+		if pattern_text is not None:
+			tmp_patterns.append(Pattern(pattern_text))
+
+	patterns=tmp_patterns
+
+	refined_paths=process_tree(
+		direpa_src, 
+		patterns,
+		get_abs_paths=get_abs_paths,
+		keep_empty_dir=keep_empty_dir,
+		direpa_dst=direpa_dst,
+	)
+
+	return refined_paths
+
+def process_tree(
+	direpa_src, 
+	patterns,
+	get_abs_paths,
+	keep_empty_dir,
+	direpa_dst=None,
+	_path_elems=None, 
+	_direpa_root=None,
+	_parent_path_elem=None,
+	_make_dir_dst=None,
+	_dir_path_elem=None,
+):
+	is_root=False
+	if _path_elems is None:
+		is_root=True
+		_path_elems=[]
+		_direpa_root=direpa_src
+
+	elems=os.listdir(direpa_src)
+
+	if _dir_path_elem is not None:
+		if keep_empty_dir is True:
+			_path_elems.append(_dir_path_elem)
 		else:
-			shutil.copy2(path, path_dst)
+			if len(elems) > 0:
+				_path_elems.append(_dir_path_elem)
 
-def get_all_paths(direpa_src, direpas_all, filenpas_all, direpa=""):
-	if not direpa:
-		direpa=direpa_src
-
-	for elem_name in os.listdir(direpa):
-		elem_path=os.path.join(direpa, elem_name).replace("\\", "/")
-		if os.path.isdir(elem_path):
-			direpas_all.add(elem_path)
-			get_all_paths(direpa_src, direpas_all, filenpas_all, elem_path)
+	if _make_dir_dst is not None:
+		if keep_empty_dir is True:
+			os.makedirs(_make_dir_dst, exist_ok=True)
 		else:
-			filenpas_all.add(elem_path)
+			if len(elems) > 0:
+				os.makedirs(_make_dir_dst, exist_ok=True)
 
-def set_rules(rules, filenpa_rules):
-	if os.path.exists(filenpa_rules):
-		with open(filenpa_rules, "r") as f:
-			for line in f.read().splitlines():
-				sline=line.strip()
-				# A blank line matches no files, so it can serve as a separator for readability.
-				if sline != "":
-					if not re.match(r"#", sline):
-						rules.append(sline)
+	for elem in sorted(elems):
+		_dir_path_elem=None
+		_make_dir_dst=None
+		_path_elem=os.path.join(direpa_src, elem).replace("\\", "/")
+		isdir=os.path.isdir(_path_elem)
+		if isdir is True:
+			isfile=False
+		else:
+			isfile=os.path.isfile(_path_elem)
 
-def get_paths_to_copy(direpa_src, **user_data):
-	data=dict(added_rules=[], use_files=True)
+		if isdir or isfile:
+			path_elem=PathElem(
+				elem,
+				_path_elem, 
+				_direpa_root,
+				isfile,
+				patterns,
+				parent=_parent_path_elem,
+			)
 
-	if user_data:
-		data.update(user_data)
-
-	rules=[]
-	excluded_paths=set()
-
-	if data["use_files"] is True:
-		if is_pkg_git(direpa_src):
-			filenpa_private=os.path.join(direpa_src, ".git","info", "refine")
-			set_rules(rules, filenpa_private)
-
-		filenpa_refine=os.path.join(direpa_src, ".refine")
-		set_rules(rules, filenpa_refine)
-
-	if data["added_rules"]:
-		rules.extend(data["added_rules"])
-	# if location_alias_src == "pkg_version":
-		# rules.append("/.gpm/")
-
-	# print(rules)
-	# input()
-
-	filenpas_all=set()
-	direpas_all=set()
-	get_all_paths(direpa_src, direpas_all, filenpas_all)
-
-	# pprint(filenpas_all)
-
-	# input()
-
-	excluded_dirs=set()
-	for rule in rules:
-		rule=rule.strip()
-		if rule: # ignore empty lines
-			if rule[0] != "#": # ignore comment
-				negative=re.match(r"^\!(.*)", rule)
-				if negative:
-					rule=negative.group(1)
-
-				absolute=re.match(r"^/(.*)$", rule)
-				if absolute:
-					rule=absolute.group(1)
-
-				directory=re.match(r"^(.*)/$", rule) # means match only directory, so no file or symbolic link
-				if directory:
-					rule=directory.group(1)
-
-				if rule in ["*", "/*", "**", "/**/*", "**/*"]:
-					rule="**"
+			if path_elem.is_discarded is False:
+				tmp_path_elem=None
+				if get_abs_paths is True:
+					tmp_path_elem=path_elem.path_elem
 				else:
-					if not absolute:
-						rule = "**/{}".format(rule)
+					tmp_path_elem=path_elem.path_text
 
-				rule=rule.replace("**/**/", "**/")
-				double_asterix_ended=re.match(r"^(.*)\*\*$", rule)
-				if double_asterix_ended:
-					rule="{}/*".format(rule)
+				path_dst=None
+				if direpa_dst is not None:
+					path_dst=os.path.join(direpa_dst, path_elem.path_text)
 
-				if rule == "**/*": # top_level
-					if negative:
-						excluded_dirs=set()
-						excluded_paths=set()
-					else:
-						process_excluded_dir(direpa_src, excluded_dirs)
-						for p in filenpas_all:
-							excluded_paths.add(p)
+				if path_elem.isfile is True:
+					_path_elems.append(tmp_path_elem)
+					if path_dst is not None:
+						shutil.copy2(path_elem.path_elem, path_dst)
 				else:
-					if negative:
-						# get all matches with regular glob
-						direpa_rule="{}/{}".format(direpa_src, rule)
-						for path in glob.glob("{}/{}".format(direpa_src, rule), recursive=True):
-							path=path.replace("\\", "/")
-							# according to path
-							# check if for one excluded_dirs, one is path direct parent or path is equals.
-							if path in excluded_dirs:
-								direpa_path_relation=path
-							else:
-								direpa_path_relation=get_direct_parent(path, excluded_dirs)
-							if direpa_path_relation:
-								# remove direpa_path_relation from excluded_dirs
-								excluded_dirs.remove(direpa_path_relation)
-								# pprint(excluded_dirs)
-								# add all other children folders from parent folders in excluded dirs
-								if direpa_path_relation != path: # direct_parent
-									# print("ousous")
-									for elem in os.listdir(direpa_path_relation):
-										elem=elem.replace("\\","/")
-										direpa=os.path.join(direpa_path_relation, elem)
-										if os.path.isdir(direpa):
-											if direpa != path:
-												process_excluded_dir(direpa, excluded_dirs)
-								else: # path == direpa_path_relation
-									pass # do nothing path has already been removed from excluded dirs
+					_dir_path_elem=tmp_path_elem
+					if path_dst is not None:
+						_make_dir_dst=path_dst
 
-								# remove all paths in excluded_paths that contain paths
-								paths_remove=[]
-								for expath in excluded_paths:
-									if os.path.isdir(path):
-										if "{}/".format(path) in expath:
-											paths_remove.append(expath)
-									else:
-										if path == expath:
-											paths_remove.append(expath)
+			if path_elem.is_recursive:
+				process_tree(
+					path_elem.path_elem, 
+					patterns, 
+					get_abs_paths=get_abs_paths,
+					keep_empty_dir=keep_empty_dir,
+					direpa_dst=direpa_dst,
+					_path_elems=_path_elems,
+					_direpa_root=_direpa_root,
+					_parent_path_elem=path_elem,
+					_make_dir_dst=_make_dir_dst,
+					_dir_path_elem=_dir_path_elem,
+				)
 
-								for rpath in paths_remove:
-									excluded_paths.remove(rpath)
+	if is_root is True:
+		return _path_elems
+
+class PathElem():
+	def __init__(
+		self,
+		elem, 
+		path_elem, 
+		direpa_root,
+		isfile,
+		patterns,
+		parent=None,
+	):
+		self._parent=parent
+		self.isfile=isfile
+		self.elem=elem
+		self.path_elem=path_elem
+		self.path_text="{}".format(os.path.relpath(path_elem, direpa_root))
+		self._level=get_path_level(self.path_text)
+		self.is_discarded=False
+		if self._parent is not None:
+			self.is_discarded=self._parent.is_discarded
+		self.is_recursive=self.isfile is False
+		self._process_patterns(patterns)
+
+	def _process_patterns(self, patterns):
+		for pattern in patterns:
+			if pattern.level == -1 or (pattern.level == self._level):
+				if not (self.isfile is True and pattern.match_file is False):
+					if pattern.is_negate is True:
+
+						if self.is_discarded is True:
+							elem=self.path_text
+							if pattern.match_reg_elem is True:
+								elem=self.elem
+
+							if re.match(pattern.reg_text, elem):
+								self.is_discarded=False
+								if self.isfile is False:
+									self.is_recursive=True
 					else:
-						direpa_rule="{}/{}".format(direpa_src.replace("\\","/"), rule)
-						# print("here before the crash")
-						# print("before ##########")
-						# pprint(direpa_rule)
-						# print("after ##########")
-						# input()
-						# input()
-						# print(direpa_src)
-						# print(rule)
-						# print(direpa_rule)
-						# input()
-						# C:\\Users\\user\\Desktop\\data\\apps\\r\\refine\\src\\__pycache__* C:\\Users\\user\\Desktop\\data\\apps\\r\\refine\\src\\__pycache__
-						for path in my_glob.glob(excluded_dirs, direpa_rule, recursive=True):
-							path=path.replace("\\", "/")
-							if directory:
-								if os.path.isdir(path):
-									# print(excluded_dirs)
-									# input("here")
-									process_excluded_dir(path, excluded_dirs)
-									for p in filenpas_all:
-										if "{}/".format(path) in p:
-											excluded_paths.add(p)
-							else:
-								if not os.path.isdir(path):
-									excluded_paths.add(path)
-								else:
-									process_excluded_dir(path, excluded_dirs)
-									for p in filenpas_all:
-										if "{}/".format(path) in p:
-											excluded_paths.add(p)
+						elem=self.path_text
+						if pattern.match_reg_elem is True:
+							elem=self.elem
 
-	# pprint(excluded_paths)
-	# pprint(excluded_dirs)
-	# add direpas not removed
-	remove_dirs=set()
-	# pprint(excluded_dirs)
-	# pprint(direpas_all)
-	# input()
-	for exdir in excluded_dirs:		
-		for direpa in direpas_all:
-			# print(exdir, direpa)
-			if exdir in direpa:
-				# print("excluded")
-				remove_dirs.add(direpa)
-			# else:
-				# print("not excluded")
-			# input()
-
-	kept_paths=filenpas_all - excluded_paths
-	remaing_folders=direpas_all - remove_dirs
-	kept_paths.update(remaing_folders)
-	# pprint(kept_paths)
-
-	return sorted(kept_paths)
-
-# direct_parent means a level up from path 
-def get_direct_parent(path, excluded_dirs):
-	num_elems_path=len(path.split(os.sep))
-
-	for exdir in excluded_dirs:
-		num_elems_exdir=len(exdir.split(os.sep))
-		
-		if num_elems_path > num_elems_exdir:
-			if num_elems_path - num_elems_exdir == 1:
-				return exdir # direct_parent
-	return ""
-
-# this function always keep only the highest directory and get rid of its children, if all its children are excluded
-def process_excluded_dir(direpa, excluded_dirs):
-	# input(excluded_dirs)
-	# input(direpa)
-	num_elems_direpa=len(direpa.split(os.sep))
-	# input(num_elems_direpa)
-	# print(num_elems_direpa)
-	# input(direpa)
-	add_direpa=True
-	for exdir in excluded_dirs:
-		# input(exdir)
-		num_elems_exdir=len(exdir.split(os.sep))
-		# print(num_elems_exdir)
-		if num_elems_direpa < num_elems_exdir:
-			if direpa in exdir: # if direpa is parent of exdir
-				remove_children(excluded_dirs, direpa)
-				break
-		elif num_elems_direpa == num_elems_exdir:
-			if direpa == exdir: 
-				add_direpa=False
-				break
-		elif num_elems_direpa > num_elems_exdir:
-			if exdir in direpa: # exdir is parent of direpa, direpa is not need in set.
-				add_direpa=False
-				break
-
-	if add_direpa:
-		direpa=direpa.replace("\\","/")
-		excluded_dirs.add(direpa)
-		# excluded_dirs.add(direpa.replace("\\", "\\\\"))
-		# print(direpa)
-		# input()
-		# excluded_dirs.add(direpa.replace("\\", "\\"))
-		# excluded_dirs.add(direpa.replace("\\", "/"))
-
-def remove_children(excluded_dirs, pattern):
-	delete_elems=[]
-	for exdir in excluded_dirs:
-		if pattern in exdir:
-			delete_elems.append(exdir)
-
-	for elem in delete_elems:
-		excluded_dirs.remove(elem)
-				
-def compare_set(set1, set2):
-	print(len(set1), len(set2))
-	pprint(set1 ^ set2)
+						if re.match(pattern.reg_text, elem):
+							self.is_discarded=True
+							if self.isfile is False:
+								self.is_recursive=pattern.is_recursive
