@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-# author: Gabriel Auger
-# version: 0.1.1
-# name: refine
-# license: MIT
-
-from .dev.refine import copy_to_destination, get_paths_to_copy
-from .dev import glob as my_glob
-
+from .dev.refine import refine, PathElem as _PathElem
+from .dev.patterns import Pattern as _Pattern, set_pattern as _set_pattern
+from .dev.exceptions import RefineError, RefinePatternError
