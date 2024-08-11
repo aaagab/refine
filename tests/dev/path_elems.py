@@ -6,10 +6,13 @@ import tempfile
 
 from .helpers import err
 
-from ..gpkgs import message as msg
-from ..gpkgs import shell_helpers as shell
+from ...dev.refine import PathElem
+from ...dev.patterns import Pattern, set_pattern
 
-def test_path_elems(direpa_test, main_pkg):
+from ...gpkgs import message as msg
+from ...gpkgs import shell_helpers as shell
+
+def test_path_elems():
     direpa_tmp=os.path.join(
         tempfile.gettempdir(),
         "refine",
@@ -148,11 +151,11 @@ def test_path_elems(direpa_test, main_pkg):
 
         tmp_patterns=[]
         for pattern in dy_elem["patterns"]:
-            pattern_text=main_pkg._set_pattern(pattern)
+            pattern_text=set_pattern(pattern)
             if pattern_text is not None:
-                tmp_patterns.append(main_pkg._Pattern(pattern_text))
+                tmp_patterns.append(Pattern(pattern_text))
 
-        path_elem=main_pkg._PathElem(
+        path_elem=PathElem(
             direpa_root=direpa_root,
             elem=tmp_path_elem.split(os.sep)[-1],
             isfile=dy_elem["isfile"],

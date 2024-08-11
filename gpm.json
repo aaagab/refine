@@ -2,7 +2,10 @@
     "authors": [
         "Gabriel Auger"
     ],
-    "deps": [],
+    "deps": [
+        "cf09346e-b436-4259-b6dd-e56516b508a5|message|9.0.0|gpm",
+        "df328dbe-54ab-4a6d-b7a2-932b0eaee30a|shell_helpers|5.4.2|gpm"
+    ],
     "description": "Filter paths in a source directory using gitignore patterns. Filtered paths can copied to a destination directory.",
     "filen_main": "__init__.py",
     "gpm_version": "0.2.0",
@@ -11,7 +14,7 @@
         "MIT"
     ],
     "name": "refine",
-    "timestamp": 1669850302.2484334,
+    "timestamp": 1723410191.969416,
     "uuid4": "9aaed767-ea75-499c-ac4c-6524d720ff10",
-    "version": "1.0.0"
+    "version": "1.1.0"
 }

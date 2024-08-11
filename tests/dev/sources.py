@@ -6,10 +6,13 @@ import tempfile
 
 from .helpers import err
 
-from ..gpkgs import message as msg
-from ..gpkgs import shell_helpers as shell
+from ...dev.refine import refine
+from ...dev.exceptions import RefineError
 
-def test_sources(direpa_src, main_pkg):
+from ...gpkgs import message as msg
+from ...gpkgs import shell_helpers as shell
+
+def test_sources(direpa_src):
    filenpa_pattern=os.path.join(direpa_src, ".refine")
    direpa_dst=os.path.join(tempfile.gettempdir(), "refine-dst")
    if os.path.exists(direpa_dst):
@@ -17,34 +20,34 @@ def test_sources(direpa_src, main_pkg):
    os.makedirs(direpa_dst, exist_ok=True)
 
    try:
-      main_pkg.refine(direpa_src="unknown")
+      refine(direpa_src="unknown")
       err()
-   except main_pkg.RefineError as e:
+   except RefineError as e:
       if not "directory not found" in str(e):
          raise
 
    try:
-      main_pkg.refine(direpa_src=direpa_src, filenpa_patterns=3)
+      refine(direpa_src=direpa_src, filenpa_patterns=3)
       err()
-   except main_pkg.RefineError as e:
+   except RefineError as e:
       if not "option filenpa_patterns must be of type" in str(e):
          raise
 
    try:
-      main_pkg.refine(direpa_src=direpa_src, filenpa_patterns=[direpa_dst])
+      refine(direpa_src=direpa_src, filenpa_patterns=[direpa_dst])
       err()
-   except main_pkg.RefineError as e:
+   except RefineError as e:
       if not "filenpa_patterns path is not a file" in str(e):
          raise
 
    try:
-      main_pkg.refine(direpa_src=direpa_src, filenpa_patterns=["unknown.txt"])
+      refine(direpa_src=direpa_src, filenpa_patterns=["unknown.txt"])
       err()
-   except main_pkg.RefineError as e:
+   except RefineError as e:
       if not "filenpa_patterns path not found" in str(e):
          raise
 
-   output_paths=main_pkg.refine(
+   output_paths=refine(
       direpa_src, 
       patterns=[], 
       get_abs_paths=False,

@@ -6,7 +6,7 @@ import os
 import sys
 import time
 
-from ..gpkgs import message as msg
+from ...gpkgs import message as msg
 
 def err():
     direpa_script=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

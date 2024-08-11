@@ -6,20 +6,23 @@ import sys
 
 from .helpers import err
 
-from ..gpkgs import message as msg
+from ...dev.exceptions import RefinePatternError
+from ...dev.patterns import Pattern, set_pattern
 
-def test_patterns(main_pkg):
+from ...gpkgs import message as msg
+
+def test_patterns():
 
     for pattern, output in [
         ["", None],
         ["# This is a comment", None],
-        ["\# This is not a comment", "# This is not a comment"],
+        [r"\# This is not a comment", "# This is not a comment"],
         ["  logs", "logs"],
-        ["\  logs", "  logs"],
-        ["\!logs", "\!logs"],
+        [r"\  logs", "  logs"],
+        [r"\!logs", r"\!logs"],
         ["!logs", "!logs"],
     ]:
-        pattern_text=main_pkg._set_pattern(pattern)
+        pattern_text=set_pattern(pattern)
         if pattern_text != output:
             msg.warning("For pattern '{}' at set_attribute expected '{}' obtained '{}'".format(
                 pattern, 
@@ -39,7 +42,7 @@ def test_patterns(main_pkg):
         dict( pattern=r"**logs", refinePatternError="pattern '**' must precede a forward slash"),
         dict( pattern=r"/logs", reg_text="^logs$", is_negate=False, is_recursive=False, level=1, match_file=True, match_reg_elem=False),
         dict( pattern=r"/logs/debug/", reg_text="^logs/debug$", is_negate=False, is_recursive=False, level=2, match_file=False, match_reg_elem=False),
-        dict( pattern=r"\!logs", reg_text="^\!logs$", is_negate=False, is_recursive=False, level=-1, match_file=True, match_reg_elem=True),
+        dict( pattern=r"\!logs", reg_text=r"^\!logs$", is_negate=False, is_recursive=False, level=-1, match_file=True, match_reg_elem=True),
         dict( pattern=r"\\!logs", reg_text=r"^\\\!logs$", is_negate=False, is_recursive=False, level=-1, match_file=True, match_reg_elem=True),
         dict( pattern=r"\\\\\\logs", reg_text=r"^\\\\\\logs$", is_negate=False, is_recursive=False, level=-1, match_file=True, match_reg_elem=True),
         dict( pattern=r"\@logs", refinePatternError="escape char is only for symbols"),
@@ -93,9 +96,9 @@ def test_patterns(main_pkg):
 
     for dy_pattern in patterns:
         try:
-            pattern_text=main_pkg._set_pattern(dy_pattern["pattern"])
+            pattern_text=set_pattern(dy_pattern["pattern"])
             if pattern_text is not None:
-                pattern=main_pkg._Pattern(pattern_text)
+                pattern=Pattern(pattern_text)
                 for attr in [
                     "is_negate",
                     "is_recursive",
@@ -129,7 +132,7 @@ def test_patterns(main_pkg):
                         raise
 
                 msg.success("Passed Pattern '{}'".format(dy_pattern["pattern"]))
-        except main_pkg.RefinePatternError as e:
+        except RefinePatternError as e:
             if "refinePatternError" in dy_pattern:
                 if dy_pattern["refinePatternError"] in str(e):
                     msg.success("Passed Pattern '{}'".format(dy_pattern["pattern"]))
