@@ -7,11 +7,13 @@ import tempfile
 from .helpers import err
 from .refine_paths import get_refine_paths
 
-from ..gpkgs import message as msg
-from ..gpkgs import shell_helpers as shell
+from ...dev.refine import refine
+
+from ...gpkgs import message as msg
+from ...gpkgs import shell_helpers as shell
 
 
-def test_refine(direpa_test, main_pkg):
+def test_refine():
    direpa_src=os.path.join(tempfile.gettempdir(), "refine-src")
    direpa_refine=os.path.join(tempfile.gettempdir(), "refine")
    filenpa_pattern=os.path.join(direpa_refine, ".refine")
@@ -65,7 +67,7 @@ def test_refine(direpa_test, main_pkg):
          print_index=_index
 
 
-      output_paths=main_pkg.refine(
+      output_paths=refine(
          direpa_src, 
          patterns=dy_ref["patterns"], 
          get_abs_paths=dy_ref["get_abs_paths"],

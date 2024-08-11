@@ -65,7 +65,7 @@ class Pattern():
 		if self._escaped is True:
 			self._escaped=False
 			if ch in self._escaped_chars:
-				self.reg_text+="\{}".format(ch)
+				self.reg_text+=rf"\{ch}"
 				if ch == "/":
 					self._after_slash=True
 			else:
@@ -102,7 +102,7 @@ class Pattern():
 				if self._index == 0:
 					self.is_negate=True
 				else:
-					self.reg_text+="\{}".format(ch)
+					self.reg_text+=rf"\{ch}"
 			elif ch == "*":
 				len_remain=self._get_len_remain()
 				if len_remain == 0:
@@ -184,7 +184,7 @@ class Pattern():
 				"\"",
 				"=",
 			]:
-				self.reg_text+="\{}".format(ch)
+				self.reg_text+=rf"\{ch}"
 			else:
 				self.reg_text+=ch
 
