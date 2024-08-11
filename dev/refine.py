@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# author: Gabriel Auger
-# version: 0.1.1
-# name: refine
-# license: MIT
 
 import os
 from pprint import pprint

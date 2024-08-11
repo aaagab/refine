@@ -1,10 +1,8 @@
+#!/usr/bin/env python3
 """Filename globbing utility."""
 
 # Modified by Gabriel Auger 2019 added excluded_dirs parameter
 # modified to make it work with gitignore rules.
-# version: 0.1.1
-# name: refine
-# license: MIT
 
 import os
 import re

@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-# author: Gabriel Auger
-# version: 0.1.1
-# name: release
-# license: MIT
+
 import os, shlex, sys
 
 # sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
