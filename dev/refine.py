@@ -9,13 +9,13 @@ from .exceptions import RefineError
 from .patterns import get_path_level, Pattern, set_pattern
 
 def refine(
-	direpa_src, 
-	patterns=None, 
-	get_abs_paths=True,
-	filenpa_patterns=None,
-	direpa_dst=None,
-	keep_empty_dir=True,
-):
+	direpa_src:str, 
+	patterns:list[str]|None=None, 
+	get_abs_paths:bool=True,
+	filenpa_patterns:list[str]|None=None,
+	direpa_dst:str|None=None,
+	keep_empty_dir:bool=True,
+) -> dict:
 	if patterns is None:
 		patterns=[]
 
@@ -55,11 +55,9 @@ def refine(
 		if pattern_text is not None:
 			tmp_patterns.append(Pattern(pattern_text))
 
-	patterns=tmp_patterns
-
 	refined_paths=process_tree(
 		direpa_src, 
-		patterns,
+		tmp_patterns,
 		get_abs_paths=get_abs_paths,
 		keep_empty_dir=keep_empty_dir,
 		direpa_dst=direpa_dst,
@@ -68,21 +66,23 @@ def refine(
 	return refined_paths
 
 def process_tree(
-	direpa_src, 
-	patterns,
-	get_abs_paths,
-	keep_empty_dir,
-	direpa_dst=None,
-	_path_elems=None, 
-	_direpa_root=None,
-	_parent_path_elem=None,
-	_make_dir_dst=None,
-	_dir_path_elem=None,
-):
-	is_root=False
+	direpa_src:str, 
+	patterns:list[Pattern],
+	get_abs_paths:bool,
+	keep_empty_dir:bool,
+	direpa_dst:str|None=None,
+	_path_elems:list[str]|None=None, 
+	_direpa_root:str|None=None,
+	_parent_path_elem:"PathElem|None"=None,
+	_make_dir_dst:str|None=None,
+	_dir_path_elem:str|None=None,
+	_discarded_paths:list[str]|None=None,
+) -> dict:
+	# is_root=False
 	if _path_elems is None:
-		is_root=True
+		# is_root=True
 		_path_elems=[]
+		_discarded_paths=[]
 		_direpa_root=direpa_src
 
 	elems=os.listdir(direpa_src)
@@ -112,6 +112,7 @@ def process_tree(
 			isfile=os.path.isfile(_path_elem)
 
 		if isdir or isfile:
+			assert _direpa_root is not None
 			path_elem=PathElem(
 				elem,
 				_path_elem, 
@@ -121,13 +122,16 @@ def process_tree(
 				parent=_parent_path_elem,
 			)
 
-			if path_elem.is_discarded is False:
-				tmp_path_elem=None
-				if get_abs_paths is True:
-					tmp_path_elem=path_elem.path_elem
-				else:
-					tmp_path_elem=path_elem.path_text
+			tmp_path_elem=None
+			if get_abs_paths is True:
+				tmp_path_elem=path_elem.path_elem
+			else:
+				tmp_path_elem=path_elem.path_text
 
+			if path_elem.is_discarded is True:
+				assert isinstance(_discarded_paths, list)
+				_discarded_paths.append(tmp_path_elem)
+			else:
 				path_dst=None
 				if direpa_dst is not None:
 					path_dst=os.path.join(direpa_dst, path_elem.path_text)
@@ -153,20 +157,21 @@ def process_tree(
 					_parent_path_elem=path_elem,
 					_make_dir_dst=_make_dir_dst,
 					_dir_path_elem=_dir_path_elem,
+					_discarded_paths=_discarded_paths,
 				)
 
-	if is_root is True:
-		return _path_elems
+	# if is_root is True:
+	return dict(included=_path_elems,excluded=_discarded_paths)
 
 class PathElem():
 	def __init__(
 		self,
-		elem, 
-		path_elem, 
-		direpa_root,
-		isfile,
-		patterns,
-		parent=None,
+		elem:str, 
+		path_elem:str, 
+		direpa_root:str,
+		isfile:bool,
+		patterns:list[Pattern],
+		parent:"PathElem|None"=None,
 	):
 		self._parent=parent
 		self.isfile=isfile
@@ -180,7 +185,7 @@ class PathElem():
 		self.is_recursive=self.isfile is False
 		self._process_patterns(patterns)
 
-	def _process_patterns(self, patterns):
+	def _process_patterns(self, patterns:list[Pattern]):
 		for pattern in patterns:
 			if pattern.level == -1 or (pattern.level == self._level):
 				if not (self.isfile is True and pattern.match_file is False):

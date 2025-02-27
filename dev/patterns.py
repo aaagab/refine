@@ -208,7 +208,7 @@ class Pattern():
 			self._index+=1
 			return self._parse_pattern()
 
-def get_path_level(path_elem):
+def get_path_level(path_elem:str) -> int:
 	level=0
 	for elem in path_elem.split("/"):
 		if elem != "":

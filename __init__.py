@@ -3,7 +3,7 @@ import os
 direpa_script=os.path.dirname(os.path.realpath(__file__))
 
 from .dev.refine import refine, PathElem as _PathElem
-from .dev.patterns import Pattern as _Pattern, set_pattern as _set_pattern
+from .dev.patterns import Pattern, set_pattern
 from .dev.exceptions import RefineError, RefinePatternError
 
 if os.path.exists(os.path.join(direpa_script, "tests")):

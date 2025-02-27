@@ -27,7 +27,7 @@ def test_sources(direpa_src):
          raise
 
    try:
-      refine(direpa_src=direpa_src, filenpa_patterns=3)
+      refine(direpa_src=direpa_src, filenpa_patterns=3) #type:ignore
       err()
    except RefineError as e:
       if not "option filenpa_patterns must be of type" in str(e):
