@@ -139,7 +139,9 @@ def test_path_elems():
     for dy_elem in path_elems:
         direpa_root=direpa_tmp
 
-        tmp_path_elem=None
+        tmp_path_elem:str
+        assert isinstance(dy_elem["path_elem"], str)
+        assert isinstance(dy_elem["elem"], str) or dy_elem["elem"] is None
         if dy_elem["elem"] is None:
             tmp_path_elem=os.path.join(direpa_root, dy_elem["path_elem"])
         else:
@@ -150,11 +152,13 @@ def test_path_elems():
         dy_elem["isfile"]=os.path.isfile(tmp_path_elem)
 
         tmp_patterns=[]
+        assert isinstance(dy_elem["patterns"], list)
         for pattern in dy_elem["patterns"]:
             pattern_text=set_pattern(pattern)
             if pattern_text is not None:
                 tmp_patterns.append(Pattern(pattern_text))
 
+        assert isinstance(dy_elem["parent"], PathElem) or dy_elem["parent"] is None
         path_elem=PathElem(
             direpa_root=direpa_root,
             elem=tmp_path_elem.split(os.sep)[-1],

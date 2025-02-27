@@ -48,7 +48,7 @@ def test_refine():
             open(_path_elem, "w").close()
 
       _patterns=dy_ref["patterns"]
-      filenpa_patterns=[]
+      filenpa_patterns:list[str]=[]
       if dy_ref["test_filenpa_patterns"] is True:
          with open(filenpa_pattern, "w") as f:
             for pattern in dy_ref["patterns"]:
@@ -74,7 +74,7 @@ def test_refine():
          keep_empty_dir=dy_ref["keep_empty_dir"],
          filenpa_patterns=filenpa_patterns,
          direpa_dst=_direpa_dst,
-      )
+      )["included"]
 
       if dy_ref["test_direpa_dst"] is True:
          output_paths=get_paths(

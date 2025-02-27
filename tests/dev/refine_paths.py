@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 
-def get_refine_paths(direpa_src, direpa_dst, index=None):
+def get_refine_paths(direpa_src, direpa_dst, index=None) -> tuple[list, int]:
    _refines= [
       dict(
          paths=[
